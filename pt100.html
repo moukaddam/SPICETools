@@ -1,0 +1,24 @@
+<html>
+<head>
+<script type="text/javascript" src="dygraph-combined.js"></script>
+<link rel="stylesheet" type="text/css" href="tool.css" />
+</head>
+<body>
+<div id="graphdiv2"
+  style="width:900px; height:600px;"></div>
+<script type="text/javascript">
+  g2 = new Dygraph(
+    document.getElementById("graphdiv2"),
+    "dataPT100/PT100tempresistance.csv",
+    {
+		title:  'PT100 converter',
+		ylabel: 'Resistance (Ohm)',
+		xlabel: 'Temperature (degree C)',
+		showRoller: true
+    }
+  );
+</script>
+</body>
+</html>
+
+
