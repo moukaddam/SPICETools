@@ -1,0 +1,171 @@
+<html>
+<head>
+<script type="text/javascript" src="dygraph-combined.js"></script>
+<link rel="stylesheet" type="text/css" href="tool.css" />
+</head>
+<body>
+
+<div id="graphdiv2" style="width:500px; height:300px; float:right;"></div>
+<script type="text/javascript">
+  // Draw the plot
+  g2 = new Dygraph(
+    document.getElementById("graphdiv2"),
+    "data/all.csv", // path to CSV file
+    {
+    	ylabel: 'Absolute Efficiency [%]',
+    	xlabel: 'Energy [keV]',
+    	drawPoints: true,
+    	customBars: true,
+    	includeZero: true,
+  	}        
+  );
+  
+  // Function to change data
+  function change(fileName, xlimit)
+  { 
+  	g2.updateOptions( 
+  	{ 
+  		valueRange: [0,xlimit],
+  		file: fileName 
+  	} ); 
+  	
+  }
+
+</script>
+
+<canvas id="myCanvas" width="600" height="600" />
+
+<script type="text/javascript">
+// Variable Declaration
+var elem = document.getElementById('myCanvas'),
+    elemLeft = elem.offsetLeft,
+    elemTop = elem.offsetTop,
+    context = elem.getContext('2d'),
+    segments = [],
+    ringArrows = [],
+    segArrows = [],
+    centralx = 300,
+    centraly = 300,
+    beamholerad = 40,
+    segmentrad = 20,
+    ringArrowyOffset = -3,
+    ringArrowLength = 8,
+    segArrowrOffset = 18,
+    segArrowLength = 8;
+
+// Function to change 'selection' text
+function selectText(ringID, sectID) {
+    context.clearRect(0,0, 240, 40);
+    context.font = "20px Arial";
+    if (ringID != 0 && sectID != 0)
+      var shownText = "Ring " + ringID + ", Sector " + sectID;
+    else if (ringID != 0 && sectID == 0)
+      var shownText = "Ring " + ringID;
+    else if (ringID == 0 && sectID != 0)
+      var shownText = "Sector " + sectID;
+    context.fillText(shownText, 25, 25);
+}
+
+// Event listener for `click` events.
+elem.addEventListener('click', function(event) {
+    // Grab (x, y) & turn to (r, phi), adjust to get 0 to 360 degrees
+    var xPos = event.pageX - centralx - elemLeft,
+        yPos = event.pageY - centraly - elemTop,
+        radiusClick = Math.sqrt(Math.pow(xPos, 2) + Math.pow(yPos,2)),
+        phiClick = Math.atan(yPos / xPos) * 180.0/Math.PI;
+    if(yPos/xPos < 0 && yPos > 0) phiClick += 180;
+    if(yPos/xPos > 0 && yPos < 0) phiClick += 180;
+    if(yPos/xPos < 0 && yPos < 0) phiClick += 360;
+    
+    if (radiusClick > beamholerad && radiusClick < beamholerad + (10 * segmentrad) + 2*segArrowrOffset) {
+        var ringID = Math.ceil((radiusClick - beamholerad)/segmentrad),
+            sectID = Math.ceil(phiClick / 30);
+        //console.log(ringID,sectID);
+        if (radiusClick < beamholerad + (10 * segmentrad)) {
+          if (phiClick < 345) {
+            selectText(ringID,sectID);
+            var selection = 'data/theta' + ringID + 'phi' + sectID + '.csv';
+            return change(selection, 0.5);
+          } else {
+            selectText(ringID,0);
+            var selection = 'data/ring' + ringID + '.csv';
+            return change(selection, 3);
+          } }
+        else {
+          selectText(0,sectID);
+          var selection = 'data/phi' + sectID + '.csv';
+          return change(selection, 3);
+        }
+     }
+
+
+}, false);
+
+// Add segments.
+for(var sector=0; sector<12; sector++) {
+    if(sector != 11) {
+        for(var ring=0; ring<10; ring++) {
+            segments.push({
+                inrad: beamholerad + (ring * segmentrad),
+                outrad: (beamholerad + segmentrad) + (ring * segmentrad),
+                lefphi: 0.0 * Math.PI + (sector * Math.PI/6),
+                rigphi: Math.PI/6 + (sector * Math.PI/6),
+            });
+        }
+    } else {
+        for(var ring=0; ring<10; ring++) {
+            segments.push({
+                inrad: beamholerad + (ring * segmentrad),
+                outrad: (beamholerad + segmentrad) + (ring * segmentrad),
+                lefphi: 0.0 * Math.PI + (sector * Math.PI/6),
+                rigphi: Math.PI/6 + (sector * Math.PI/6) - Math.PI/12,
+            });
+            ringArrows.push({
+                startPointX: centralx + beamholerad + segmentrad/2.0 + (ring*segmentrad),
+                startPointY: centraly + ringArrowyOffset,
+            });
+        }
+    }
+}
+
+segArrows.push({
+  startPointX: (beamholerad + (10 * segmentrad) + segArrowrOffset) * Math.cos(Math.PI/12) + centralx,
+  startPointY: (beamholerad + (10 * segmentrad) + segArrowrOffset) * Math.sin(Math.PI/12) + centraly,
+});
+
+// Render segments.
+segments.forEach(function(element) {
+    var stax = centralx + element.inrad * Math.cos(element.lefphi);
+    var stay = centraly + element.inrad * Math.sin(element.lefphi);
+    var nextx = centralx + element.outrad * Math.cos(element.rigphi);
+    var nexty = centraly + element.outrad * Math.sin(element.rigphi);
+    
+    context.moveTo(stax,stay);
+    context.arc(centralx,centraly,element.inrad,element.lefphi,element.rigphi);   
+    context.lineTo(nextx,nexty);
+    context.arc(centralx,centraly,element.outrad,element.rigphi,element.lefphi, true);    
+    context.lineTo(stax,stay);
+    context.stroke();
+});
+
+// Render ring arrows
+ringArrows.forEach(function(element) {
+  context.moveTo(element.startPointX,element.startPointY);
+  var nextx = element.startPointX + (ringArrowLength * Math.sin(Math.PI/6));
+  var nexty = element.startPointY - (ringArrowLength * Math.cos(Math.PI/6));
+  context.lineTo(nextx,nexty);
+  nextx -= ringArrowLength;
+  context.lineTo(nextx,nexty);
+  context.lineTo(element.startPointX,element.startPointY);
+  context.stroke();
+});
+
+segArrows.forEach(function(element) {
+  context.moveTo(element.startPointX + segArrowLength,element.startPointY);
+  context.arc(element.startPointX,element.startPointY,segArrowLength,0,Math.PI*2.0);
+  context.stroke();
+});
+</script>
+
+</body>
+</html>

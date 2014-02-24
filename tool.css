@@ -1,0 +1,16 @@
+div#segSelect{
+	float:left;
+	width:70%;
+	background-color: #FFFFFF;
+	border-radius: 1em;
+	padding: 1em;
+}
+
+div.segSwitch{
+	cursor: pointer;
+	font-family:"Verdana", Sans-serif;
+	text-align:center;
+	padding: 0.1em;
+	
+
+}
